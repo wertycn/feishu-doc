@@ -81,3 +81,33 @@ $:
             branch: main
             push_tags: "true"
             force: "true"
+
+        - name: create github release
+          image: docker.cnb.cool/debug.icu/dev-image/golang-1.26.0:latest
+          script: |
+            VERSION="${CNB_BRANCH}"
+            REPO="wertycn/feishu-doc"
+            NOTES=$(cat release_notes.md)
+
+            RELEASE_ID=$(curl -sf \
+              -X POST "https://api.github.com/repos/${REPO}/releases" \
+              -H "Authorization: token ${GH_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg tag "$VERSION" --arg name "$VERSION" --arg body "$NOTES" \
+                '{tag_name: $tag, name: $name, body: $body}')" \
+              | jq -r '.id')
+
+            echo "Release created: id=$RELEASE_ID"
+
+            for file in dist/feishu-doc-*; do
+              name=$(basename "$file")
+              echo "  Uploading $name..."
+              curl -sf \
+                -X POST "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=${name}" \
+                -H "Authorization: token ${GH_TOKEN}" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary @"$file" > /dev/null
+            done
+            echo "GitHub Release $VERSION 发布完成"
+          env:
+            GH_TOKEN: ${GH_TOKEN}

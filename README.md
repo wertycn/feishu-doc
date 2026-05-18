@@ -2,6 +2,8 @@
 
 飞书文档与 Markdown 双向转换的 Go SDK 和命令行工具。支持标准 Markdown 语法和 Mermaid 图表的往返无损转换。
 
+> 本 README 同时作为双向转换的效果实例：[飞书文档在线预览](https://s1n83ru6i01.feishu.cn/wiki/RXhGwpuGliUqvSkauc6cWKxynEf)
+
 ## 功能
 
 - **导出**：飞书文档 → Markdown（支持图片下载）

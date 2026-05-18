@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/debugicu/feishu-doc/internal/config"
+	"github.com/wertycn/feishu-doc/internal/config"
 
 	"github.com/spf13/cobra"
 )

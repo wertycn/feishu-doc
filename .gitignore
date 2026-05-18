@@ -1,4 +1,4 @@
 .env
-feishu-doc
+/feishu-doc
 bin/
 dist/

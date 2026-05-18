@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/debugicu/feishu-doc/core"
-	"github.com/debugicu/feishu-doc/internal/config"
+	"github.com/wertycn/feishu-doc/core"
+	"github.com/wertycn/feishu-doc/internal/config"
 
 	"github.com/spf13/cobra"
 )

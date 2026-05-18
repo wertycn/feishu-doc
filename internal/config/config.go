@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/debugicu/feishu-doc/internal/crypto"
+	"github.com/wertycn/feishu-doc/internal/crypto"
 )
 
 type Config struct {

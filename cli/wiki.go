@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/debugicu/feishu-doc/core"
+	"github.com/wertycn/feishu-doc/core"
 
 	larkwiki "github.com/larksuite/oapi-sdk-go/v3/service/wiki/v2"
 	"github.com/spf13/cobra"

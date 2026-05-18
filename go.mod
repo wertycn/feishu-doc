@@ -1,4 +1,4 @@
-module github.com/debugicu/feishu-doc
+module github.com/wertycn/feishu-doc
 
 go 1.22
 

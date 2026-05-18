@@ -5,7 +5,7 @@ LDFLAGS := -ldflags "-s -w -X main.version=$(VERSION)"
 .PHONY: build test clean release
 
 build:
-	go build $(LDFLAGS) -o bin/$(BINARY) ./cli/cmd
+	go build $(LDFLAGS) -o bin/$(BINARY) ./cmd/feishu-doc
 
 test:
 	go test ./...
@@ -20,7 +20,7 @@ release:
 		for arch in amd64 arm64; do \
 			echo "Building $$os/$$arch..."; \
 			CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch \
-				go build $(LDFLAGS) -o dist/$(BINARY)-$(VERSION)-$$os-$$arch ./cli/cmd; \
+				go build $(LDFLAGS) -o dist/$(BINARY)-$(VERSION)-$$os-$$arch ./cmd/feishu-doc; \
 		done; \
 	done
 	ls -lh dist/

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/debugicu/feishu-doc/core"
+	"github.com/wertycn/feishu-doc/core"
 	"github.com/spf13/cobra"
 )
 

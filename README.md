@@ -1,6 +1,6 @@
 # feishu-doc
 
-飞书文档与 Markdown 双向转换的命令行工具。支持标准 Markdown 语法和 Mermaid 图表的往返无损转换。
+飞书文档与 Markdown 双向转换的 Go SDK 和命令行工具。支持标准 Markdown 语法和 Mermaid 图表的往返无损转换。
 
 ## 功能
 
@@ -12,8 +12,10 @@
 
 ## 安装
 
+### 作为 CLI 工具
+
 ```bash
-go install github.com/debugicu/feishu-doc/cli/cmd@latest
+go install github.com/wertycn/feishu-doc/cmd/feishu-doc@latest
 ```
 
 或从源码编译：
@@ -24,7 +26,40 @@ cd feishu-doc
 make build
 ```
 
-## 快速开始
+### 作为 Go SDK
+
+```bash
+go get github.com/wertycn/feishu-doc
+```
+
+```go
+import (
+    "github.com/wertycn/feishu-doc/core"
+    "github.com/wertycn/feishu-doc/core/markdown"
+)
+
+// 创建客户端
+client := core.NewClient(appID, appSecret, "your-domain.feishu.cn")
+client.UserAccessToken = "u-xxx"
+
+// 导出飞书文档为 Markdown
+result, err := client.ExportToMarkdown(ctx, docID, &core.ExportOptions{
+    WithImages: true,
+    OutputDir:  "./output",
+})
+fmt.Println(result.Markdown)
+
+// Markdown → 飞书文档块
+blocks := markdown.Convert([]byte("# Hello\n\nworld"))
+
+// 全量覆盖导入
+err = client.OverwriteMarkdown(ctx, docID, mdContent, "doc.md")
+
+// 追加导入
+err = client.ImportMarkdown(ctx, docID, mdContent, "doc.md")
+```
+
+## 快速开始（CLI）
 
 ```bash
 # 1. 配置应用凭证
@@ -56,44 +91,50 @@ feishu-doc import --file output.md --id <doc_id> --overwrite
 
 5. 创建应用版本并发布
 
+## SDK 包结构
+
+```
+github.com/wertycn/feishu-doc/
+├── core/                  # 核心 SDK — 飞书文档操作
+│   ├── Client             # 飞书 API 客户端
+│   ├── ExportToMarkdown   # 飞书文档 → Markdown
+│   ├── ImportMarkdown     # Markdown → 飞书文档（追加）
+│   ├── OverwriteMarkdown  # Markdown → 飞书文档（全量覆盖）
+│   ├── FetchAllBlocks     # 获取文档所有块
+│   └── ...                # 创建、复制、知识库操作
+├── core/markdown/         # Markdown 解析与转换
+│   ├── Convert            # Markdown → 飞书块
+│   └── BlocksToMarkdown   # 飞书块 → Markdown（在 core 包中）
+├── cmd/feishu-doc/        # CLI 入口
+└── cli/                   # CLI 命令实现
+```
+
 ## 命令参考
 
 ### 文档操作
 
 ```bash
-# 创建文档
 feishu-doc create --title "新文档"
-
-# 获取文档内容
-feishu-doc get --id <doc_id>              # 纯文本
-feishu-doc get --id <doc_id> --blocks     # 块结构
-
-# 导出为 Markdown
-feishu-doc export --id <doc_id> --file out.md
+feishu-doc get --id <doc_id>                               # 纯文本
+feishu-doc get --id <doc_id> --blocks                      # 块结构
 feishu-doc export --id <doc_id> --file out.md --with-images
-
-# 导入 Markdown
 feishu-doc import --file doc.md --id <doc_id>              # 追加
 feishu-doc import --file doc.md --id <doc_id> --overwrite  # 全量覆盖
-feishu-doc import --file doc.md --parent <node_token> --title "标题"  # 知识库新建
-
-# 追加文本
+feishu-doc import --file doc.md --parent <node_token> --title "标题"
 feishu-doc update --id <doc_id> --content "追加内容"
-
-# 复制文档
 feishu-doc copy --id <node_token> --parent <目标父节点> --name "副本"
 ```
 
 ### 知识库操作
 
 ```bash
-feishu-doc wiki spaces                        # 列出知识库
-feishu-doc wiki info --token <node_token>     # 节点信息
-feishu-doc wiki tree --space <space_id>       # 文档树
+feishu-doc wiki spaces
+feishu-doc wiki info --token <node_token>
+feishu-doc wiki tree --space <space_id>
 feishu-doc wiki create --parent <node_token> --title "新文档"
 ```
 
-### 配置管理
+### 配置与认证
 
 ```bash
 feishu-doc config set --app-id <id> --app-secret <secret>
@@ -104,30 +145,25 @@ feishu-doc auth status
 
 ## 支持的文档元素
 
-### 导出（飞书 → Markdown）
-
-| 元素 | 输出格式 |
-| --- | --- |
-| 标题 1-6 | `# ~ ######` |
-| 正文 | 段落文本 |
-| 无序/有序列表 | `- item` / `1. item`（支持嵌套） |
-| 待办事项 | `- [x]` / `- [ ]` |
-| 代码块 | ` ```lang ``` `（40+ 种语言） |
-| Mermaid 图表 | ` ```mermaid ``` ` |
-| 引用 | `> text` |
-| 高亮块 | `> [!NOTE]` / `[!TIP]` / `[!WARNING]` 等 |
-| 表格 | Markdown 表格 |
-| 图片 | `![](url)` 或下载到本地 |
-| 分割线 | `---` |
-| 行内样式 | `**粗体**` `*斜体*` `` `代码` `` `~~删除线~~` `[链接](url)` |
-| 行内公式 | `$formula$` |
-| @用户 | `@名称` |
-| @文档 | `[标题](url)` |
-| 不支持的块 | `<!-- feishu:type=xxx -->` 注释保留 |
-
-### 导入（Markdown → 飞书）
-
-支持标准 Markdown + GFM 扩展（表格、任务列表、删除线），Mermaid 代码块自动转为飞书图表。
+| 元素 | 导出格式 | 导入 |
+| --- | --- | --- |
+| 标题 1-6 | `# ~ ######` | ✓ |
+| 段落 | 文本 | ✓ |
+| 无序/有序列表 | `- item` / `1. item`（支持嵌套） | ✓ |
+| 待办事项 | `- [x]` / `- [ ]` | ✓ |
+| 代码块 | ` ```lang ``` `（40+ 种语言） | ✓ |
+| Mermaid 图表 | ` ```mermaid ``` ` | ✓ |
+| 引用 | `> text` | ✓ |
+| 高亮块 | `> [!NOTE]` / `[!TIP]` / `[!WARNING]` | ✓ |
+| 表格 | Markdown 表格 | ✓ |
+| 图片 | `![](url)` | ✓ |
+| 分割线 | `---` | ✓ |
+| 行内样式 | `**粗体**` `*斜体*` `` `代码` `` `~~删除线~~` | ✓ |
+| 链接 | `[text](url)` | ✓ |
+| 行内公式 | `$formula$` | ✓ |
+| @用户 | `@名称` | ✓ |
+| @文档 | `[标题](url)` | ✓ |
+| 不支持的块 | `<!-- feishu:type=xxx -->` 注释保留 | — |
 
 ## 依赖
 

@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/debugicu/feishu-doc/internal/config"
+	"github.com/wertycn/feishu-doc/internal/config"
 
 	"github.com/spf13/cobra"
 )

@@ -1,0 +1,4 @@
+.env
+feishu-doc
+bin/
+dist/

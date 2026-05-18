@@ -1,0 +1,47 @@
+# CNB 云原生构建配置 — feishu-doc
+
+$:
+  tag_push:
+    - services:
+        - docker
+      stages:
+        - name: build multi-platform binaries
+          image: docker.cnb.cool/debug.icu/dev-image/golang-1.26.0:latest
+          script: |
+            VERSION="${CNB_BRANCH}"
+            make test
+            make release V="${VERSION}"
+            for f in dist/feishu-doc-${VERSION}-*; do
+              target=$(echo "$f" | sed "s/${VERSION}-//")
+              cp "$f" "$target"
+            done
+            ls -lh dist/
+
+        - name: extract release notes
+          image: docker.cnb.cool/debug.icu/dev-image/golang-1.26.0:latest
+          script: |
+            git fetch --tags --unshallow 2>/dev/null || git fetch --tags
+            PREV_TAG=$(git describe --tags --abbrev=0 "${CNB_BRANCH}^" 2>/dev/null || true)
+            if [ -n "$PREV_TAG" ]; then
+              RANGE="${PREV_TAG}..${CNB_BRANCH}"
+            else
+              RANGE="${CNB_BRANCH}"
+            fi
+            TAG_MSG=$(git log --pretty=format:'- %s' "$RANGE" | perl -ne 'print unless $seen{$_}++')
+            if [ -z "$TAG_MSG" ]; then
+              TAG_MSG="Release ${CNB_BRANCH}"
+            fi
+            echo "$TAG_MSG" > release_notes.md
+
+        - name: create release
+          type: git:release
+          options:
+            title: ${CNB_BRANCH}
+            descriptionFromFile: release_notes.md
+            latest: true
+
+        - name: upload release attachments
+          image: cnbcool/attachments:latest
+          settings:
+            attachments:
+              - "./dist/*"

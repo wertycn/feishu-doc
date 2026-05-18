@@ -87,25 +87,48 @@ $:
           script: |
             VERSION="${CNB_BRANCH}"
             REPO="wertycn/feishu-doc"
-            NOTES=$(cat release_notes.md | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))' | sed 's/^"//;s/"$//')
 
-            RESP=$(curl -sf \
-              -X POST "https://api.github.com/repos/${REPO}/releases" \
-              -H "Authorization: token ${GH_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d "{\"tag_name\":\"${VERSION}\",\"name\":\"${VERSION}\",\"body\":\"${NOTES}\"}")
+            BODY="Release ${VERSION}"
+            if [ -f release_notes.md ]; then
+              BODY=$(cat release_notes.md)
+            fi
 
-            RELEASE_ID=$(echo "$RESP" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+            # 用 python3 构建 JSON 并创建 release
+            RESP=$(python3 -c "
+            import json, subprocess, sys
+            data = json.dumps({'tag_name': '${VERSION}', 'name': '${VERSION}', 'body': '''${BODY}'''})
+            r = subprocess.run([
+                'curl', '-s', '-w', '%{http_code}', '-X', 'POST',
+                'https://api.github.com/repos/${REPO}/releases',
+                '-H', 'Authorization: token ${GH_TOKEN}',
+                '-H', 'Content-Type: application/json',
+                '-d', data
+            ], capture_output=True, text=True)
+            sys.stdout.write(r.stdout)
+            sys.stderr.write(r.stderr)
+            ")
+
+            HTTP_CODE="${RESP: -3}"
+            BODY_RESP="${RESP:0:-3}"
+            echo "HTTP: $HTTP_CODE"
+
+            if [ "$HTTP_CODE" != "201" ]; then
+              echo "创建 Release 失败:"
+              echo "$BODY_RESP"
+              exit 1
+            fi
+
+            RELEASE_ID=$(echo "$BODY_RESP" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
             echo "Release created: id=$RELEASE_ID"
 
             for file in dist/feishu-doc-*; do
               name=$(basename "$file")
               echo "  Uploading $name..."
-              curl -sf \
+              curl -s -o /dev/null -w "    HTTP %{http_code}\n" \
                 -X POST "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=${name}" \
                 -H "Authorization: token ${GH_TOKEN}" \
                 -H "Content-Type: application/octet-stream" \
-                --data-binary @"$file" > /dev/null
+                --data-binary @"$file"
             done
             echo "GitHub Release $VERSION 发布完成"
           env:

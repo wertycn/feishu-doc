@@ -1,9 +1,34 @@
 # CNB 云原生构建配置 — feishu-doc
 
+# ── main 分支推送：测试 → 同步到 GitHub ──────────────────────────────────────
+main:
+  push:
+    - imports:
+        - https://cnb.cool/debug.icu/secrets/-/blob/main/common.yaml
+      stages:
+        - name: test
+          image: docker.cnb.cool/debug.icu/dev-image/golang-1.26.0:latest
+          script: |
+            make test
+
+        - name: sync to github
+          image: tencentcom/git-sync
+          settings:
+            target_url: https://github.com/wertycn/feishu-doc.git
+            auth_type: https
+            username: wertycn
+            password: ${GH_TOKEN}
+            branch: main
+            push_tags: "false"
+            force: "true"
+
+# ── Tag 事件：编译 → Release → 上传制品 → 同步到 GitHub ──────────────────────
 $:
   tag_push:
     - services:
         - docker
+      imports:
+        - https://cnb.cool/debug.icu/secrets/-/blob/main/common.yaml
       stages:
         - name: build multi-platform binaries
           image: docker.cnb.cool/debug.icu/dev-image/golang-1.26.0:latest
@@ -45,3 +70,14 @@ $:
           settings:
             attachments:
               - "./dist/*"
+
+        - name: sync tag to github
+          image: tencentcom/git-sync
+          settings:
+            target_url: https://github.com/wertycn/feishu-doc.git
+            auth_type: https
+            username: wertycn
+            password: ${GH_TOKEN}
+            branch: main
+            push_tags: "true"
+            force: "true"

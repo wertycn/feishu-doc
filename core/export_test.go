@@ -449,7 +449,7 @@ func TestBlocksToMarkdown_ConsecutiveEmptyText(t *testing.T) {
 		makeTextBlock("b2", "below"),
 	}
 	result := BlocksToMarkdown(blocks, "doc1", "Doc", nil, nil)
-	expected := "above\n\nbelow\n\n"
+	expected := "above\n\nbelow\n"
 	if result != expected {
 		t.Errorf("expected %q, got %q", expected, result)
 	}

@@ -159,7 +159,12 @@ func BlocksToMarkdown(blocks []*larkdocx.Block, docID, title string, imageURLs m
 		}
 	}
 
-	return buf.String()
+	result := buf.String()
+	result = strings.TrimRight(result, "\n")
+	if result != "" {
+		result += "\n"
+	}
+	return result
 }
 
 func (c *Client) FetchImageTmpURLs(ctx context.Context, blocks []*larkdocx.Block) map[string]string {
@@ -402,8 +407,6 @@ func escapeMd(s string) string {
 	buf.Grow(len(s))
 	for i, r := range s {
 		switch r {
-		case '\\':
-			buf.WriteString(`\\`)
 		case '*':
 			buf.WriteString(`\*`)
 		case '_':
@@ -559,7 +562,9 @@ func (ec *exportCtx) renderTable(block *larkdocx.Block) string {
 				var parts []string
 				for _, childID := range cellBlock.Children {
 					if child, ok := ec.blockMap[childID]; ok {
-						parts = append(parts, ec.cellBlockText(child))
+						if t := ec.cellBlockText(child); t != "" {
+							parts = append(parts, t)
+						}
 					}
 				}
 				grid[r][c] = strings.Join(parts, " ")
@@ -567,31 +572,20 @@ func (ec *exportCtx) renderTable(block *larkdocx.Block) string {
 		}
 	}
 
-	colWidths := make([]int, cols)
-	for c := 0; c < cols; c++ {
-		colWidths[c] = 3
-		for r := 0; r < rows; r++ {
-			w := displayWidth(grid[r][c])
-			if w > colWidths[c] {
-				colWidths[c] = w
-			}
-		}
-	}
-
 	var buf bytes.Buffer
 	buf.WriteString("|")
 	for c := 0; c < cols; c++ {
-		buf.WriteString(" " + padRight(grid[0][c], colWidths[c]) + " |")
+		buf.WriteString(" " + grid[0][c] + " |")
 	}
 	buf.WriteString("\n|")
 	for c := 0; c < cols; c++ {
-		buf.WriteString(" " + strings.Repeat("-", colWidths[c]) + " |")
+		buf.WriteString(" --- |")
 	}
 	buf.WriteString("\n")
 	for r := 1; r < rows; r++ {
 		buf.WriteString("|")
 		for c := 0; c < cols; c++ {
-			buf.WriteString(" " + padRight(grid[r][c], colWidths[c]) + " |")
+			buf.WriteString(" " + grid[r][c] + " |")
 		}
 		buf.WriteString("\n")
 	}

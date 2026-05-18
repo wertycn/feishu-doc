@@ -352,10 +352,28 @@ func cleanupMentionPrefix(els []*larkdocx.TextElement) []*larkdocx.TextElement {
 	return els
 }
 
+func unescapeMd(s string) string {
+	var buf strings.Builder
+	buf.Grow(len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+1 < len(s) {
+			next := s[i+1]
+			if (next >= '!' && next <= '/') || (next >= ':' && next <= '@') ||
+				(next >= '[' && next <= '`') || (next >= '{' && next <= '~') {
+				buf.WriteByte(next)
+				i++
+				continue
+			}
+		}
+		buf.WriteByte(s[i])
+	}
+	return buf.String()
+}
+
 func extractInlineNode(node ast.Node, source []byte, s inlineStyle) []*larkdocx.TextElement {
 	switch n := node.(type) {
 	case *ast.Text:
-		content := string(n.Segment.Value(source))
+		content := unescapeMd(string(n.Segment.Value(source)))
 		if n.SoftLineBreak() || n.HardLineBreak() {
 			content += "\n"
 		}

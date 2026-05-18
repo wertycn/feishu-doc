@@ -87,16 +87,15 @@ $:
           script: |
             VERSION="${CNB_BRANCH}"
             REPO="wertycn/feishu-doc"
-            NOTES=$(cat release_notes.md)
+            NOTES=$(cat release_notes.md | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))' | sed 's/^"//;s/"$//')
 
-            RELEASE_ID=$(curl -sf \
+            RESP=$(curl -sf \
               -X POST "https://api.github.com/repos/${REPO}/releases" \
               -H "Authorization: token ${GH_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "$(jq -n --arg tag "$VERSION" --arg name "$VERSION" --arg body "$NOTES" \
-                '{tag_name: $tag, name: $name, body: $body}')" \
-              | jq -r '.id')
+              -d "{\"tag_name\":\"${VERSION}\",\"name\":\"${VERSION}\",\"body\":\"${NOTES}\"}")
 
+            RELEASE_ID=$(echo "$RESP" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
             echo "Release created: id=$RELEASE_ID"
 
             for file in dist/feishu-doc-*; do

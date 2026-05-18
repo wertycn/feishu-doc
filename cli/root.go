@@ -8,6 +8,7 @@ import (
 
 	"github.com/wertycn/feishu-doc/core"
 	"github.com/wertycn/feishu-doc/internal/config"
+	"github.com/wertycn/feishu-doc/internal/larkcli"
 
 	"github.com/spf13/cobra"
 )
@@ -59,11 +60,30 @@ var rootCmd = &cobra.Command{
 			domain = savedCfg.Domain
 		}
 
+		// 尝试从 lark-cli 获取凭证（fallback）
+		var larkCreds *larkcli.Credentials
+		if appID == "" || appSecret == "" {
+			if lc, err := larkcli.Load(); err == nil {
+				larkCreds = lc
+				if appID == "" {
+					appID = lc.AppID
+				}
+				if appSecret == "" {
+					appSecret = lc.AppSecret
+				}
+				if domain == "" && lc.Domain != "" {
+					domain = lc.Domain
+				}
+				fmt.Fprintln(os.Stderr, "使用 lark-cli 凭证")
+			}
+		}
+
 		if appID == "" || appSecret == "" {
 			return fmt.Errorf("凭证未配置，请通过以下任一方式提供:\n" +
-				"  1. feishu-doc config set --app-id <ID> --app-secret <SECRET>\n" +
-				"  2. 设置环境变量 FEISHU_APP_ID / FEISHU_APP_SECRET\n" +
-				"  3. 使用 --app-id / --app-secret 参数")
+				"  1. 安装 lark-cli 并完成 lark-cli auth login\n" +
+				"  2. feishu-doc config set --app-id <ID> --app-secret <SECRET>\n" +
+				"  3. 设置环境变量 FEISHU_APP_ID / FEISHU_APP_SECRET\n" +
+				"  4. 使用 --app-id / --app-secret 参数")
 		}
 
 		client = core.NewClient(appID, appSecret, domain)
@@ -73,6 +93,7 @@ var rootCmd = &cobra.Command{
 			return nil
 		}
 
+		// 优先使用 feishu-doc 自身的 token
 		if savedCfg == nil {
 			savedCfg, _ = config.Load()
 		}
@@ -90,9 +111,26 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
+		// fallback: 使用 lark-cli 的 token
+		if client.UserAccessToken == "" && larkCreds != nil {
+			if larkCreds.TokenValid() {
+				client.UserAccessToken = larkCreds.UserAccessToken
+			} else if larkCreds.RefreshValid() {
+				fmt.Fprintln(os.Stderr, "lark-cli token 已过期，正在刷新...")
+				ctx := context.Background()
+				result, err := client.RefreshUserToken(ctx, larkCreds.RefreshToken)
+				if err == nil {
+					client.UserAccessToken = result.AccessToken
+					fmt.Fprintln(os.Stderr, "Token 刷新成功")
+				} else {
+					fmt.Fprintf(os.Stderr, "lark-cli token 刷新失败: %v\n", err)
+				}
+			}
+		}
+
 		if client.UserAccessToken == "" {
 			fmt.Fprintln(os.Stderr, "提示: 未检测到用户授权，将使用应用身份访问 (权限受限)")
-			fmt.Fprintln(os.Stderr, "运行 feishu-doc auth login 进行用户授权以获取完整权限")
+			fmt.Fprintln(os.Stderr, "运行 feishu-doc auth login 或 lark-cli auth login 进行用户授权")
 		}
 
 		return nil

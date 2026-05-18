@@ -84,13 +84,9 @@ $:
 
         - name: create github release
           image: docker.cnb.cool/debug.icu/dev-image/golang-1.26.0:latest
-          exports:
-            GH_TOKEN: ${GH_TOKEN}
           script: |
             VERSION="${CNB_BRANCH}"
             REPO="wertycn/feishu-doc"
-
-            echo "GH_TOKEN length: ${#GH_TOKEN}"
 
             apt-get update -qq && apt-get install -y -qq gh > /dev/null 2>&1 || {
               mkdir -p /tmp/gh && cd /tmp/gh
@@ -111,3 +107,5 @@ $:
               dist/feishu-doc-*
 
             echo "GitHub Release $VERSION 发布完成"
+          env:
+            GH_TOKEN: ${GH_TOKEN}

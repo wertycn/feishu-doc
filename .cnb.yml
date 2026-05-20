@@ -88,11 +88,8 @@ $:
             VERSION="${CNB_BRANCH}"
             REPO="wertycn/feishu-doc"
 
-            echo "=== 诊断 GH_TOKEN ==="
             echo "GH_TOKEN length: ${#GH_TOKEN}"
-            echo "GH_TOKEN first 4 chars: ${GH_TOKEN:0:4}"
-            gh auth status 2>&1 || true
-            echo "======================"
+            echo "GH_TOKEN prefix: $(printf '%.4s' "$GH_TOKEN")"
 
             apt-get update -qq && apt-get install -y -qq gh > /dev/null 2>&1 || {
               mkdir -p /tmp/gh && cd /tmp/gh

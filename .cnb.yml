@@ -88,6 +88,12 @@ $:
             VERSION="${CNB_BRANCH}"
             REPO="wertycn/feishu-doc"
 
+            echo "=== 诊断 GH_TOKEN ==="
+            echo "GH_TOKEN length: ${#GH_TOKEN}"
+            echo "GH_TOKEN first 4 chars: ${GH_TOKEN:0:4}"
+            gh auth status 2>&1 || true
+            echo "======================"
+
             apt-get update -qq && apt-get install -y -qq gh > /dev/null 2>&1 || {
               mkdir -p /tmp/gh && cd /tmp/gh
               curl -sL "https://github.com/cli/cli/releases/download/v2.74.0/gh_2.74.0_linux_amd64.tar.gz" | tar xz --strip-components=1
@@ -107,5 +113,3 @@ $:
               dist/feishu-doc-*
 
             echo "GitHub Release $VERSION 发布完成"
-          env:
-            GH_TOKEN: ${GH_TOKEN}

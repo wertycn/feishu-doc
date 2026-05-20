@@ -88,9 +88,6 @@ $:
             VERSION="${CNB_BRANCH}"
             REPO="wertycn/feishu-doc"
 
-            echo "GH_TOKEN length: ${#GH_TOKEN}"
-            echo "GH_TOKEN prefix: $(printf '%.4s' "$GH_TOKEN")"
-
             apt-get update -qq && apt-get install -y -qq gh > /dev/null 2>&1 || {
               mkdir -p /tmp/gh && cd /tmp/gh
               curl -sL "https://github.com/cli/cli/releases/download/v2.74.0/gh_2.74.0_linux_amd64.tar.gz" | tar xz --strip-components=1

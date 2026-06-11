@@ -23,4 +23,9 @@ release:
 				go build $(LDFLAGS) -o dist/$(BINARY)-$(VERSION)-$$os-$$arch ./cmd/feishu-doc; \
 		done; \
 	done
+	@for arch in amd64 arm64; do \
+		echo "Building windows/$$arch..."; \
+		CGO_ENABLED=0 GOOS=windows GOARCH=$$arch \
+			go build $(LDFLAGS) -o dist/$(BINARY)-$(VERSION)-windows-$$arch.exe ./cmd/feishu-doc; \
+	done
 	ls -lh dist/
